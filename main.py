@@ -4,12 +4,8 @@ import coc
 from coc import utils
 import asyncio
 import links
-import emojis
+from emojis import *
 from config import *
-
-lines_emoji = '<a:lines:1049699649411362836>'*8
-dot_emoji = '<a:SC_Point:1051709557157658644>'
-tdot_emoji = '<a:tdot:1039755764295798824>'
 
 intents = discord.Intents.default()
 intents.members = True

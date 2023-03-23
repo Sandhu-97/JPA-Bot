@@ -1,3 +1,7 @@
+lines_emoji = '<a:lines:1049699649411362836>'*8
+dot_emoji = '<a:SC_Point:1051709557157658644>'
+tdot_emoji = '<a:tdot:1039755764295798824>'
+
 def get_townhall_emoji(th):
     if th == 1:
         return '<:TH1:1087804411176288356>'

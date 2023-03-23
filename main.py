@@ -57,8 +57,8 @@ async def player(ctx, tag: str):
     capital_gold_looted = player.get_achievement('Aggressive Capitalism').value
     capital_gold_donated = player.get_achievement('Most Valuable Clanmate').value
     league_stars = player.get_achievement('War League Legend').value
-    th_emoji = emojis.get_townhall_emoji(th)
-    bh_emoji = emojis.get_builderhall_emoji(bh)
+    th_emoji = get_townhall_emoji(th)
+    bh_emoji = get_builderhall_emoji(bh)
     league_icon_url = league.icon.url
     clashofstats_link = f'https://www.clashofstats.com/players/{tag[1:]}'
     chocolateclash_link = f'https://fwa.chocolateclash.com/cc_n/member.php?tag={tag[1:]}'
@@ -214,7 +214,7 @@ async def clan(ctx, tag: str):
     require_townhall = clan.required_townhall
     requirement:str = clan.type
     war_league = clan.war_league.name
-    war_league_emoji = emojis.get_warleague_emoji(war_league)
+    war_league_emoji = get_warleague_emoji(war_league)
     clash_of_stats_link = f'https://www.clashofstats.com/clans/{tag[1:]}/summary'
     if is_public:
         war_log = '🔓Public'
@@ -223,7 +223,7 @@ async def clan(ctx, tag: str):
     if requirement == 'inviteOnly':
         requirement = 'Invite Only'
 
-    th_emoji = emojis.get_townhall_emoji(require_townhall)
+    th_emoji = get_townhall_emoji(require_townhall)
     description = f'''
     {lines_emoji}
     <:members:1062979463660449812> **{member_count}** <:trophy:1039734188166877204> **{trophies}** 🏆 **{versus_trophies}**

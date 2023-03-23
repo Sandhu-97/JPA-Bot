@@ -7,7 +7,6 @@ gc = gspread.service_account(filename='credentials.json')
 mastersheet = gc.open('player links')
 linkssheet = mastersheet.get_worksheet(0)
 
-
 sortedsheet = mastersheet.get_worksheet(1)
 
 def add_link(id, tag):

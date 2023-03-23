@@ -1,0 +1,6 @@
+# ignore all files
+
+*.json
+*.log
+cogs/
+config.py

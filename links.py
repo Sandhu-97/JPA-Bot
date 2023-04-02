@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO, filename='errors.log', filemode='w', for
 gc = gspread.service_account(filename='credentials.json')
 mastersheet = gc.open('player links')
 linkssheet = mastersheet.get_worksheet(0)
-
+tags = linkssheet.col_values(2)[1:]
 
 sortedsheet = mastersheet.get_worksheet(1)
 
@@ -17,11 +17,11 @@ def add_link(id, tag):
         index = tags.index(tag)
         id = ids[index]
         is_linked = True
-        return id, '{} is already linked with {}'
+        return id, '**{}** is already linked with **{}**'
     try:
         id = str(id)
         linkssheet.append_row([id, tag])
-        return id, '{} has been linked with {}'
+        return id, '**{}** has been linked with **{}**'
 
     except:
         logging.exception('add_link')

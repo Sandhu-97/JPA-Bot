@@ -4,3 +4,4 @@
 *.log
 cogs/
 config.py
+__pycache__

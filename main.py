@@ -5,7 +5,8 @@ from coc import utils
 import asyncio
 import links
 from emojis import *
-from config import *
+from config import TOKEN, COC_EMAIL, COC_PASSWORD
+from keep_alive import keep_alive
 
 intents = discord.Intents.default()
 intents.members = True
@@ -360,8 +361,10 @@ async def main():
 
         # Add the client session to the bot
         bot.coc_client = coc_client
+        keep_alive()
         await bot.start('NzY4NTAxMDY0NjM4MDA1MzAw.GLLgND.vQK_mVGtxGBLubN8ULm0DKCdO_yUW5ZWShpmyk')
-
+        await bot.start(TOKEN)
+        
 if __name__ == "__main__":
     try:
         asyncio.run(main())

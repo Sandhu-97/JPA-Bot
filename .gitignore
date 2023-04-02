@@ -6,3 +6,10 @@ cogs/
 config.py
 __pycache__
 test.py
+venv/
+replit.nix
+pyproject.toml
+poetry.lock
+keep_alive.py
+.replit
+.breakpoints

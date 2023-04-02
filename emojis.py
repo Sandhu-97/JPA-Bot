@@ -30,7 +30,7 @@ def get_townhall_emoji(th):
     elif th == 13:
         return '<:th13:943183926468444180>'
     elif th == 14:
-        return '<:th14:943183926925606933>/'
+        return '<:th14:943183926925606933>'
     elif th == 15:
         return '<:TH15:1087806502728912987>'
     else:

@@ -101,44 +101,68 @@ async def player(ctx, tag: str):
 
 @bot.command()
 async def approve(ctx, member: discord.Member):
-    guild = ctx.message.guild
+    guild = ctx.guild
+    
+    approved_role = guild.get_role(1084754624885555200)
+    unapproved_role = guild.get_role(1084815867877007382)
+
     channel_id = 1084806577942437949
-    approved_role = guild.get_role(1084754624885555200)
-    unapproved_role = guild.get_role(1084815867877007382)
     approved_channel = bot.get_channel(channel_id)
-    if unapproved_role in member.roles:
-        await member.remove_roles(unapproved_role)
-    await member.add_roles(approved_role)
-    await ctx.send('role added')
-    await approved_channel.send('Welcome to your channel')
 
-@bot.command()
-async def unapprove(ctx, member: discord.Member):
-    guild = ctx.message.guild
-    channel_id = 1084815818145153024
-    unapproved_role = guild.get_role(1084815867877007382)
-    approved_role = guild.get_role(1084754624885555200)
-    unapproved_channel = bot.get_channel(channel_id)
-
-    if approved_role in member.roles:
-        await member.remove_roles(approved_role)
-    await member.add_roles(unapproved_role)
-    await unapproved_channel.send(f'you have been unapproved {member.display_name}')
-    await ctx.send('member has been unapproved')
-
-
-@bot.command()
-async def link(ctx, tag, member: discord.Member = None):
-    tag = utils.correct_tag(tag)
-    if not member:
-        member = ctx.author
+    try:
+        tag = links.get_links(str(member.id))[0]
+    except:
+        await ctx.send(f'{member.name} does not have an account linked')
+        return
+    
     try:
         player = await ctx.bot.coc_client.get_player(tag)
     except:
         await ctx.send('invalid player tag')
         return
     
-    new_id, res = links.add_link(member.id, player.tag)
+    nickname = f'TH{player.town_hall} - {player.name}'
+
+    if unapproved_role in member.roles:
+        await member.remove_roles(unapproved_role)
+
+    await member.add_roles(approved_role)
+    await member.edit(nick=nickname)
+    embed = discord.Embed(description=f'**{approved_role.name}** role has been added to **{member.name}**', color = discord.Colour.random())
+    embed_for_approved = discord.Embed(description=f'<a:welcome:1039755758969028739> Welcome to <#1035247853339168820> {member.mention}\n\n<a:dot:1039755771744886834>This is where you will find spaces in our <#1035871505998958593>.\n<a:dot:1039755771744886834>You will be @mentioned when there is a spot open for you.\n<a:dot:1039755771744886834>You can stay in your current clan if needed.\n<a:dot:1039755771744886834>If any questions please ask here.\n<a:dot:1039755771744886834>Feel free to talk in <#1030004213465481266>.\n\nThank you and good day <a:cyan:1051709650703233124>.', color=discord.Color.random())
+    await ctx.send(embed=embed)
+    await approved_channel.send(embed=embed_for_approved)
+
+@bot.command()
+async def unapprove(ctx, member: discord.Member):
+    guild = ctx.guild
+    channel_id = 1084815818145153024
+    unapproved_channel = bot.get_channel(channel_id)
+
+    unapproved_role = guild.get_role(1084815867877007382)
+    approved_role = guild.get_role(1084754624885555200)
+
+    if approved_role in member.roles:
+        await member.remove_roles(approved_role)
+
+    await member.add_roles(unapproved_role)
+    embed = discord.Embed(description=f'**{unapproved_role.name}** role has been added to **{member.name}**', color = discord.Colour.random())
+    await ctx.send(embed=embed)
+
+
+
+@bot.command()
+async def link(ctx, tag, member: discord.Member = None):
+    tag = utils.correct_tag(tag)
+    member = member or ctx.author
+
+    try:
+        player = await ctx.bot.coc_client.get_player(tag)
+    except:
+        await ctx.send('invalid player tag')
+        return
+    
+    new_id, response = links.add_link(member.id, player.tag)
 
     try:
         new_member = bot.get_user(int(new_id))
@@ -147,17 +171,23 @@ async def link(ctx, tag, member: discord.Member = None):
         return
     
     # await ctx.send(f'{player.name} has been linked to {member.name}')
-    await ctx.send(res.format(player.name, new_member.name))
-
+    embed = discord.Embed(description=response.format(player.name, new_member.name), color=discord.Colour.random())
+    # await ctx.send(res.format(player.name, new_member.name))
+    await ctx.send(embed=embed)
 @bot.command()
 async def whois(ctx, member: discord.Member= None):
-    if not member:
-        member = ctx.author
+    member = member or ctx.author
     id = str(member.id)
     tags = links.get_links(id)
+
     if not tags:
-        await ctx.send(f'{member.name} is not linked with any account')
+        embed = discord.Embed(description=f'**{member.name}** is not linked with any account', color=discord.Color.red())
+        await ctx.send(embed=embed)
         return
+    
+    embed = discord.Embed(title=f'{member.name}#{member.discriminator} ({id})', description=f'**Created**\n{str(member.created_at)[:19]}\n\n', color=discord.Color.random())
+    embed.set_thumbnail(url=member.avatar.url)
+    field_value = f'**Created**\n{str(member.created_at)[:19]}\n\n'
     for tag in tags:
         try:
             player = await ctx.bot.coc_client.get_player(tag)
@@ -169,21 +199,36 @@ async def whois(ctx, member: discord.Member= None):
         th = player.town_hall
         exp = player.exp_level
         league = player.league
-        embed = discord.Embed(title=name, description=f'Tag: {tag}\nTH: {th}\nXP: {exp}\nLeague:{league}',  color=discord.Color.dark_blue())
-        await ctx.send(embed=embed)
+        clan = player.clan or 'Not in a clan'
+
+        if clan == 'Not in a clan':
+            clan_msg = clan
+        else:
+            clan_msg = f'{str(player.role)} of **{clan}**'
+        share_link = player.share_link
+        th_emoji = get_townhall_emoji(th) 
+        
+        field_value = field_value + f'{th_emoji}[{name} {player.tag}]({share_link})\n<:Clan_Castle10:1050401327513075802>{clan_msg}\n\n'
+
+    # embed.add_field(name=f'Accounts[{len(tags)}]', value=field_value)
+    embed.description = field_value
+    await ctx.send(embed=embed)
 
 @bot.command()
 async def unlink(ctx, tag):
     tag = utils.correct_tag(tag)
-    # if tag in links.tags:
-    #     await ctx.send(f'{tag} is not linked with anyone')
-    #     return
+    tags = links.linkssheet.col_values(2)
+    if tag not in tags:
+        await ctx.send(f'{tag} is not linked with anyone')
+        return
+    
     try:
         links.del_link(tag)
     except:
         await ctx.send('internal server error')
     else:
-        await ctx.send(f'{tag} has been unlinked')
+        embed = discord.Embed(description=f'{tag} has been unlinked', color=discord.Color.random())
+        await ctx.send(embed=embed)
 
 @bot.command()
 async def clan(ctx, tag: str):
@@ -224,29 +269,7 @@ async def clan(ctx, tag: str):
         requirement = 'Invite Only'
 
     th_emoji = get_townhall_emoji(require_townhall)
-    description = f'''
-    {lines_emoji}
-    <:members:1062979463660449812> **{member_count}** <:trophy:1039734188166877204> **{trophies}** 🏆 **{versus_trophies}**
-    {lines_emoji}
-    {desc}
-    {lines_emoji}
-    {dot_emoji}Leader: <:crown2:1087809487936684144>**{leader}**
-    {lines_emoji}
-    {dot_emoji}Location: **{location}**
-    {lines_emoji}
-    {dot_emoji}**Requirements** ⚙️{requirement.capitalize()} <:trophy:1039734188166877204> {required_trophies} {th_emoji} {require_townhall}
-    {lines_emoji}
-    {dot_emoji}War Log: **{war_log}**
-    {lines_emoji}
-    {dot_emoji}War Frequency: ⌛**{frequency.capitalize()}**
-    {lines_emoji}
-    {dot_emoji}War Performance: **<:greentick:943188177856901240> {wins} Won <:redtick:943188177798201354> {lose} Lost ❕{ties} Tied**
-    {lines_emoji}
-    {dot_emoji}War Win Streak: 🎖️**{streak}**
-    {lines_emoji}
-    <a:fwa:1037968348828409866> [Chocolate Clash Link](https://fwa.chocolateclash.com/cc_n/clan.php?tag={tag[1:]})
-    {tdot_emoji} [Clash Of Stats]({clash_of_stats_link})
-    '''
+
     description = f'''
     <:members:1062979463660449812> **{member_count}** <:trophy:1039734188166877204> **{trophies}** 🏆 **{versus_trophies}**
     {lines_emoji}
@@ -266,6 +289,7 @@ async def clan(ctx, tag: str):
     {dot_emoji}Performance: **<:greentick:943188177856901240> {wins} Won <:redtick:943188177798201354> {lose} Lost❕{ties} Tied**
     {dot_emoji}Streak: 🎖️**{streak}**
     {dot_emoji}League: {war_league_emoji}**{war_league}**
+
     <a:fwa:1037968348828409866> [Chocolate Clash Link](https://fwa.chocolateclash.com/cc_n/clan.php?tag={tag[1:]})
     {tdot_emoji} [Clash Of Stats]({clash_of_stats_link})
     '''
@@ -275,43 +299,55 @@ async def clan(ctx, tag: str):
     embed.set_footer(text='◤JPA◢ - 💎FWA💎', icon_url='https://cdn.discordapp.com/attachments/810354680198725643/1087414621385789490/IMG_20230320_220658.png')
     embed.set_thumbnail(url=badge)
     await ctx.send(embed=embed)
-
+       
 @bot.command()
-async def assign(ctx, tag):
+async def assign(ctx:commands.Context, tag):
     tag = utils.correct_tag(tag)
     try:
-        player = ctx.bot.coc_client.get_player(tag)
+        player = await ctx.bot.coc_client.get_player(tag)
     except:
         await ctx.send('invalid player tag')
-        return    
+        return
     
-def get_heroes_levels(heroes):
-    bklevel, aqlevel, gwlevel, rclevel = 0, 0, 0, 0
-    for hero in heroes:
-        if hero.name == 'Barbarian King':
-            bklevel = hero.level
-        elif hero.name == 'Archer Queen':
-            aqlevel = hero.level
-        elif hero.name == 'Grand Warden':
-            gwlevel = hero.level
-        elif hero.name == 'Royal Champion':
-            rclevel = hero.level
-        
+    clan = player.clan.name
+    player_role = str(player.role)
 
-    # if rclevel:
-    #     return bk
+    clan_id = links.roles_dic[clan]
+    clan_role_id = links.roles_dic[player_role]
 
-        
-@bot.command()
-async def load(ctx:commands.Context, extension):
-    await bot.load_extension(f'cogs.{extension}')
-    await ctx.send(f'Loaded extension: {extension}')
+    clan_role = discord.utils.get(ctx.guild.roles, id=clan_id)
+    player_role_role = discord.utils.get(ctx.guild.roles, id=clan_role_id)
 
-@bot.command()
-async def reload(ctx:commands.Context, extension):
-    await bot.reload_extension(f'cogs.{extension}')
-    await ctx.send(f'Reloaded extension: {extension}')
+    try:
+        id = links.get_link_by_tag(tag)
+    except:
+        await ctx.send(f'{tag} is not linked with anyone')
+        return
+    
+    try:
+        member:discord.Member = ctx.guild.get_member(int(id))
+    except:
+        await ctx.send(f'cannot find user linked with {tag}')
+        return
+    
+    await member.add_roles(clan_role, player_role_role)
+    await ctx.send('roles added for the member')
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        message = '`ERROR: Missing Arguement(s)`'  
+    if isinstance(error, commands.CommandNotFound):       
+        message = ''    
+    if isinstance(error, commands.CommandInvokeError):
+        message = "`ERROR: Internal Error`"
+        links.logging.exception('Command invoke error {}'.format(error))
+    if isinstance(error, discord.errors.NotFound):
+        message = "`ERROR: Not Found`" 
+    if isinstance(error, commands.MissingPermissions):
+        message = '`ERROR: Missing Permissions`'
+
+    await ctx.send(message)
     
 async def main():
 
